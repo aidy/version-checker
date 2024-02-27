@@ -10,10 +10,14 @@ import (
 	"github.com/jetstack/version-checker/pkg/api"
 )
 
-type Client struct{}
+type Client struct {
+	FetchMetadata bool
+}
 
 func New() (*Client, error) {
-	return &Client{}, nil
+	return &Client{
+		FetchMetadata: true,
+	}, nil
 }
 
 func (c *Client) Name() string {
@@ -36,7 +40,27 @@ func (c *Client) Tags(ctx context.Context, host, repo, image string) ([]api.Imag
 
 	var tags []api.ImageTag
 	for _, t := range bareTags {
-		tags = append(tags, api.ImageTag{Tag: t})
+		tag := api.ImageTag{Tag: t}
+
+		if c.FetchMetadata {
+			img, err := name.ParseReference(fmt.Sprintf("%s:%s", src, t))
+			if err != nil {
+				continue
+			}
+			image, err := remote.Image(img, remote.WithContext(ctx))
+			if err != nil {
+				continue
+			}
+			if digest, err := image.Digest(); err == nil {
+				tag.SHA = digest.String()
+			}
+			if conf, err := image.ConfigFile(); err == nil {
+				tag.Architecture = api.Architecture(conf.Architecture)
+				tag.OS = api.OS(conf.OS)
+				tag.Timestamp = conf.Created.Time
+			}
+		}
+		tags = append(tags, tag)
 	}
 
 	return tags, nil
