@@ -13,6 +13,7 @@ import (
 	"github.com/jetstack/version-checker/pkg/client/ecr"
 	"github.com/jetstack/version-checker/pkg/client/gcr"
 	"github.com/jetstack/version-checker/pkg/client/ghcr"
+	"github.com/jetstack/version-checker/pkg/client/gocr"
 	"github.com/jetstack/version-checker/pkg/client/quay"
 	"github.com/jetstack/version-checker/pkg/client/selfhosted"
 )
@@ -75,7 +76,7 @@ func New(ctx context.Context, log *logrus.Entry, opts Options) (*Client, error) 
 		selfhostedClients = append(selfhostedClients, sClient)
 	}
 
-	fallbackClient, err := selfhosted.New(ctx, log, new(selfhosted.Options))
+	fallbackClient, err := gocr.New()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create fallback client: %s", err)
 	}
